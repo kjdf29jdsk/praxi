@@ -1,0 +1,6 @@
+main: com.minexd.praxi.Praxi
+name: Praxi
+version: ${project.version}
+author: joeleoli
+description: ${project.description}
+depend: [Zoot]
