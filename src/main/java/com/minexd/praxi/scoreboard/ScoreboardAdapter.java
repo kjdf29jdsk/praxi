@@ -2,6 +2,7 @@ package com.minexd.praxi.scoreboard;
 
 import com.bizarrealex.aether.scoreboard.Board;
 import com.bizarrealex.aether.scoreboard.BoardAdapter;
+import com.bizarrealex.aether.scoreboard.cooldown.BoardCooldown;
 import com.minexd.praxi.event.game.EventGame;
 import com.minexd.praxi.profile.Profile;
 import com.minexd.praxi.profile.ProfileState;
@@ -12,13 +13,40 @@ import java.util.ArrayList;
 import java.util.List;
 import com.minexd.praxi.Praxi;
 import com.minexd.praxi.party.Party;
+import java.util.Set;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitRunnable;
 
 public class ScoreboardAdapter implements BoardAdapter {
 
 	private int inQueues;
 	private int inFights;
+
+	public ScoreboardAdapter() {
+		new BukkitRunnable() {
+			@Override
+			public void run() {
+				int inQueues = 0;
+				int inFights = 0;
+
+				for (Player player : Bukkit.getOnlinePlayers()) {
+					Profile profile = Profile.getByUuid(player.getUniqueId());
+
+					if (profile != null) {
+						if (profile.getState() == ProfileState.QUEUEING) {
+							inQueues++;
+						} else if (profile.getState() == ProfileState.FIGHTING || profile.getState() == ProfileState.EVENT) {
+							inFights++;
+						}
+					}
+				}
+
+				ScoreboardAdapter.this.inQueues = inQueues;
+				ScoreboardAdapter.this.inFights = inFights;
+			}
+		}.runTaskTimerAsynchronously(Praxi.get(), 2L, 2L);
+	}
 
 	@Override
 	public String getTitle(Player player) {
@@ -26,7 +54,7 @@ public class ScoreboardAdapter implements BoardAdapter {
 	}
 
 	@Override
-	public List<String> getScoreboard(Player player, Board board) {
+	public List<String> getScoreboard(Player player, Board board, Set<BoardCooldown> cooldowns) {
 		Profile profile = Profile.getByUuid(player.getUniqueId());
 
 		if (!profile.getOptions().showScoreboard()) {
@@ -85,27 +113,6 @@ public class ScoreboardAdapter implements BoardAdapter {
 		lines.add(CC.SB_BAR);
 
 		return lines;
-	}
-
-	@Override
-	public void preLoop() {
-		int inQueues = 0;
-		int inFights = 0;
-
-		for (Player player : Bukkit.getOnlinePlayers()) {
-			Profile profile = Profile.getByUuid(player.getUniqueId());
-
-			if (profile != null) {
-				if (profile.getState() == ProfileState.QUEUEING) {
-					inQueues++;
-				} else if (profile.getState() == ProfileState.FIGHTING || profile.getState() == ProfileState.EVENT) {
-					inFights++;
-				}
-			}
-		}
-
-		this.inQueues = inQueues;
-		this.inFights = inFights;
 	}
 
 }
